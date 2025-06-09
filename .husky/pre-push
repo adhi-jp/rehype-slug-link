@@ -1,0 +1,2 @@
+pnpm run check:strict
+pnpm run test
