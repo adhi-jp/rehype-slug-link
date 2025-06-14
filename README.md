@@ -2,7 +2,7 @@
 
 [![build status](https://github.com/adhi-jp/rehype-slug-link/actions/workflows/ci.yml/badge.svg)](https://github.com/adhi-jp/rehype-slug-link/actions)
 [![npm version](https://img.shields.io/npm/v/rehype-slug-link.svg)](https://www.npmjs.com/package/rehype-slug-link)
-
+[![codecov](https://codecov.io/gh/adhi-jp/rehype-slug-link/graph/badge.svg?token=2NJE12TPJX)](https://codecov.io/gh/adhi-jp/rehype-slug-link)
 [![bundle size](https://deno.bundlejs.com/?q=rehype-slug-link&badge)](https://bundlejs.com/?q=rehype-slug-link)
 
 A [rehype](https://github.com/rehypejs/rehype) plugin that converts custom link syntax (e.g. `[{#slug}]`) in text nodes into anchor links to headings, by collecting heading IDs and their text content.
