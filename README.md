@@ -83,7 +83,10 @@ console.log(String(file));
 <!-- Output -->
 <h1 id="chapter-1">Chapter 1</h1>
 <h2 id="chapter-2">Chapter 2</h2>
-<p>Read <a href="#chapter-1">Chapter 1</a> before <a href="#chapter-2">Chapter 2</a>.</p>
+<p>
+  Read <a href="#chapter-1">Chapter 1</a> before
+  <a href="#chapter-2">Chapter 2</a>.
+</p>
 ```
 
 ### With Custom Heading IDs
@@ -115,9 +118,9 @@ import rehypeSlugLink from "rehype-slug-link";
 
 const file = await rehype()
   .use(rehypeSlug)
-  .use(rehypeSlugLink, { 
+  .use(rehypeSlugLink, {
     fallbackToHeadingText: true,
-    pattern: /\[text:([^\]]+)\]/g 
+    pattern: /\[text:([^\]]+)\]/g,
   })
   .process("<h1>Introduction</h1><p>See [text:Introduction]</p>");
 
@@ -129,19 +132,16 @@ console.log(String(file));
 
 ```js
 import { rehype } from "rehype";
-import rehypeSlug from "rehype-slug";
+import rehypeHeadingSlug from "rehype-heading-slug";
 import rehypeSlugLink from "rehype-slug-link";
 
 const file = await rehype()
-  .use(rehypeSlug)
-  .use(rehypeSlugLink, { 
-    normalizeUnicode: true,
-    pattern: /\[link:([^\]]+)\]/g 
-  })
-  .process("<h1>café</h1><p>Go to [link:café]</p>");
+  .use(rehypeHeadingSlug, { normalizeUnicode: true })
+  .use(rehypeSlugLink, { normalizeUnicode: true })
+  .process("<h1>café</h1><p>See [{#cafe}]</p>");
 
 console.log(String(file));
-// <h1 id="café">café</h1><p>Go to <a href="#café">café</a></p>
+// <h1 id="cafe">café</h1><p>See <a href="#cafe">café</a></p>
 ```
 
 ---
@@ -156,14 +156,14 @@ Replaces custom link syntax in text nodes with anchor links to headings, based o
 
 All options are optional:
 
-| Name                   | Type     | Default                                      | Description                                                                                   |
-|------------------------|----------|----------------------------------------------|-----------------------------------------------------------------------------------------------|
-| `pattern`              | RegExp   | `/\[\{#([a-zA-Z0-9-_]+)\}\]/g`               | Regular expression to match link syntax. Must have a capture group for the slug.              |
-| `patternGroupMissing`  | string   | `"wrap"`                                     | If `pattern` has no capture group: `"wrap"` (wrap whole pattern), or `"error"` (throw error). |
-| `fallbackToHeadingText`| boolean  | `false`                                      | If `true`, use heading text as slug if ID not found.                                          |
-| `invalidSlug`          | string   | `"convert"`                                  | How to handle invalid slugs: `"convert"` (auto-fix) or `"error"` (throw error).               |
-| `maintainCase`         | boolean  | `false`                                      | Preserve case when generating slugs.                                                          |
-| `normalizeUnicode`     | boolean  | `false`                                      | Normalize Unicode characters in slugs and heading text.                                       |
+| Name                    | Type    | Default                        | Description                                                                                                                                                                                                                                                        |
+| ----------------------- | ------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pattern`               | RegExp  | `/\[\{#([a-zA-Z0-9-_]+)\}\]/g` | Regular expression to match link syntax. Must have a capture group for the slug.                                                                                                                                                                                   |
+| `patternGroupMissing`   | string  | `"wrap"`                       | If `pattern` has no capture group: `"wrap"` (wrap whole pattern), or `"error"` (throw error).                                                                                                                                                                      |
+| `fallbackToHeadingText` | boolean | `false`                        | If `true`, use heading text as slug if ID not found.                                                                                                                                                                                                               |
+| `invalidSlug`           | string  | `"convert"`                    | How to handle invalid slugs: `"convert"` (auto-fix) or `"error"` (throw error).                                                                                                                                                                                    |
+| `maintainCase`          | boolean | `false`                        | Preserve case when generating slugs.                                                                                                                                                                                                                               |
+| `normalizeUnicode`      | boolean | `false`                        | Normalize Unicode characters in slugs and heading text. Only converts Latin-based accented characters to ASCII equivalents, preserving other character systems (Cyrillic, CJK, etc.). Enables case-insensitive matching between normalized slugs and heading text. |
 
 ---
 
