@@ -33,7 +33,7 @@
     "index.d.ts",
     "lib/"
   ],
-  "packageManager": "pnpm@10.9.0",
+  "packageManager": "pnpm@10.11.1",
   "scripts": {
     "check": "tsc --noEmit",
     "check:strict": "tsc --noEmit --skipLibCheck false",
