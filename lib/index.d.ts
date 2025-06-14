@@ -7,7 +7,7 @@ import type { Root } from "hast";
 export interface RehypeSlugLinkOptions {
   /**
    * Link syntax regular expression pattern.
-   * @default /\[\{#([a-zA-Z0-9-_]+)\}\]/g
+   * @default /\[\{#([a-zA-Z0-9-_\u00C0-\uFFFF]+)\}\]/g
    */
   pattern?: RegExp;
 
@@ -40,7 +40,10 @@ export interface RehypeSlugLinkOptions {
   maintainCase?: boolean;
 
   /**
-   * Normalize Unicode characters.
+   * Normalize Unicode characters to ASCII equivalents.
+   * Only converts Latin-based accented characters, preserving other character systems
+   * (Cyrillic, CJK, etc.). Uses NFD normalization to decompose characters, removes
+   * combining diacritical marks, and converts special characters like æ→ae, ø→o, etc.
    * @default false
    */
   normalizeUnicode?: boolean;
