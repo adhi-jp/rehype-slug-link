@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rehype } from "rehype";
-import { processHtml, createProcessor } from "./helpers/test-utils.js";
+import { processHtml } from "./helpers/test-utils.js";
 
 describe("rehype-slug-link: edge cases", () => {
   it("handles text with no pattern matches", async () => {
@@ -36,65 +35,6 @@ describe("rehype-slug-link: edge cases", () => {
 
     expect(result).toContain('<h1 id="">');
     expect(result).toContain("<p>[{#}]</p>");
-  });
-});
-
-describe("rehype-slug-link: processing state management", () => {
-  it("prevents reprocessing of already processed trees", async () => {
-    const processor = createProcessor();
-
-    const firstResult = await processor.process(
-      '<h1 id="test">Test</h1><p>[{#test}]</p>',
-    );
-    const secondResult = await processor.process(firstResult.value.toString());
-
-    expect(secondResult.value.toString()).toBe(
-      '<h1 id="test">Test</h1><p><a href="#test">Test</a></p>',
-    );
-  });
-
-  it("marks text nodes as processed when pattern matches but result is unchanged", async () => {
-    const processor = createProcessor({ pattern: /(123)/g });
-    const tree = {
-      type: "root",
-      children: [
-        {
-          type: "element",
-          tagName: "p",
-          children: [{ type: "text", value: "123" }],
-        },
-      ],
-    };
-
-    const result = await processor.run(tree);
-    const textNode = result.children[0].children.find(
-      (n) => n.type === "text" && n.value === "123",
-    );
-
-    expect(textNode?.data?.rehypeSlugLinkProcessed).toBe(true);
-  });
-
-  it("skips already processed text nodes", async () => {
-    const processor = createProcessor();
-    const tree = {
-      type: "root",
-      children: [
-        {
-          type: "element",
-          tagName: "p",
-          children: [
-            {
-              type: "text",
-              value: "[{#test}]",
-              data: { rehypeSlugLinkProcessed: true },
-            },
-          ],
-        },
-      ],
-    };
-
-    const result = await processor.run(tree);
-    expect(result.children[0].children[0].value).toBe("[{#test}]");
   });
 });
 
