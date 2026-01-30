@@ -3,7 +3,6 @@
 [![build status](https://github.com/adhi-jp/rehype-slug-link/actions/workflows/ci.yml/badge.svg)](https://github.com/adhi-jp/rehype-slug-link/actions)
 [![npm version](https://img.shields.io/npm/v/rehype-slug-link.svg)](https://www.npmjs.com/package/rehype-slug-link)
 [![codecov](https://codecov.io/gh/adhi-jp/rehype-slug-link/graph/badge.svg?token=MW7COHPSBF)](https://codecov.io/gh/adhi-jp/rehype-slug-link)
-[![bundle size](https://deno.bundlejs.com/?q=rehype-slug-link&badge)](https://bundlejs.com/?q=rehype-slug-link)
 
 A [rehype](https://github.com/rehypejs/rehype) plugin that converts custom link syntax (e.g. `[{#slug}]`) in text nodes into anchor links to headings, by collecting heading IDs and their text content.
 
@@ -141,7 +140,7 @@ const file = await rehype()
   .process("<h1>café</h1><p>See [{#cafe}]</p>");
 
 console.log(String(file));
-// <h1 id="cafe">café</h1><p>See <a href="#cafe">café</a></p>
+// <h1 id="cafe">café</h1><p>See <a href="#cafe">cafe</a></p>
 ```
 
 ---
@@ -158,7 +157,7 @@ All options are optional:
 
 | Name                    | Type    | Default                        | Description                                                                                                                                                                                                                                                        |
 | ----------------------- | ------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pattern`               | RegExp  | `/\[\{#([a-zA-Z0-9-_]+)\}\]/g` | Regular expression to match link syntax. Must have a capture group for the slug.                                                                                                                                                                                   |
+| `pattern`               | RegExp  | `/\[\{#([a-zA-Z0-9-_\u00C0-\uFFFF]+)\}\]/g` | Regular expression to match link syntax. Must have a capture group for the slug. Default allows ASCII and Unicode letters in the slug.                                                                                                                                 |
 | `patternGroupMissing`   | string  | `"wrap"`                       | If `pattern` has no capture group: `"wrap"` (wrap whole pattern), or `"error"` (throw error).                                                                                                                                                                      |
 | `fallbackToHeadingText` | boolean | `false`                        | If `true`, use heading text as slug if ID not found.                                                                                                                                                                                                               |
 | `invalidSlug`           | string  | `"convert"`                    | How to handle invalid slugs: `"convert"` (auto-fix) or `"error"` (throw error).                                                                                                                                                                                    |
