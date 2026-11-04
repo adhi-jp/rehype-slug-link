@@ -155,14 +155,25 @@ Replaces custom link syntax in text nodes with anchor links to headings, based o
 
 All options are optional:
 
-| Name                    | Type    | Default                        | Description                                                                                                                                                                                                                                                        |
-| ----------------------- | ------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pattern`               | RegExp  | `/\[\{#([a-zA-Z0-9-_\u00C0-\uFFFF]+)\}\]/g` | Regular expression to match link syntax. Must have a capture group for the slug. Default allows ASCII and Unicode letters in the slug.                                                                                                                                 |
-| `patternGroupMissing`   | string  | `"wrap"`                       | If `pattern` has no capture group: `"wrap"` (wrap whole pattern), or `"error"` (throw error).                                                                                                                                                                      |
-| `fallbackToHeadingText` | boolean | `false`                        | If `true`, use heading text as slug if ID not found.                                                                                                                                                                                                               |
-| `invalidSlug`           | string  | `"convert"`                    | How to handle invalid slugs: `"convert"` (auto-fix) or `"error"` (throw error).                                                                                                                                                                                    |
-| `maintainCase`          | boolean | `false`                        | Preserve case when generating slugs.                                                                                                                                                                                                                               |
-| `normalizeUnicode`      | boolean | `false`                        | Normalize Unicode characters in slugs and heading text. Only converts Latin-based accented characters to ASCII equivalents, preserving other character systems (Cyrillic, CJK, etc.). Enables case-insensitive matching between normalized slugs and heading text. |
+| Name                          | Type    | Default                                     | Description                                                                                                                                                                                                                                                        |
+| ----------------------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pattern`                     | RegExp  | `/\[\{#([a-zA-Z0-9-_\u00C0-\uFFFF]+)\}\]/g` | Regular expression to match link syntax. The first capture group is used as the slug. Use the `g` flag to match every occurrence. Default allows ASCII and Unicode letters in the slug.                                                                            |
+| `missingCaptureGroupHandling` | string  | `"wrap"`                                    | If `pattern` has no capture group: `"wrap"` (wrap whole pattern), or `"error"` (throw error).                                                                                                                                                                      |
+| `fallbackToHeadingText`       | boolean | `false`                                     | If `true`, use heading text as slug if ID not found.                                                                                                                                                                                                               |
+| `invalidSlugHandling`         | string  | `"convert"`                                 | How to handle slugs containing characters other than ASCII letters, digits, `-`, and `_`: `"convert"` (auto-fix with github-slugger) or `"error"` (throw error).                                                                                                   |
+| `maintainCase`                | boolean | `false`                                     | Preserve case when generating slugs.                                                                                                                                                                                                                               |
+| `normalizeUnicode`            | boolean | `false`                                     | Normalize Unicode characters in slugs and heading text. Only converts Latin-based accented characters to ASCII equivalents, preserving other character systems (Cyrillic, CJK, etc.). Enables case-insensitive matching between normalized slugs and heading text. |
+
+Options shared with [rehype-heading-slug](https://github.com/adhi-jp/rehype-heading-slug) (`pattern`, `missingCaptureGroupHandling`, `invalidSlugHandling`, `maintainCase`, and `normalizeUnicode`) use the same names and accepted values in both plugins.
+
+#### Deprecated options
+
+The following options are still accepted for backward compatibility but will be removed in a future major version. Using one emits a `DeprecationWarning` once. If both a deprecated option and its replacement are given, the replacement takes precedence.
+
+| Deprecated            | Replacement                   |
+| --------------------- | ----------------------------- |
+| `patternGroupMissing` | `missingCaptureGroupHandling` |
+| `invalidSlug`         | `invalidSlugHandling`         |
 
 ---
 
