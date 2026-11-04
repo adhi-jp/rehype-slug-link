@@ -1,113 +1,8 @@
-import type { Root, Element, Text, RootData, Comment, TextData } from "hast";
+import type { Root, Element, Text, Comment } from "hast";
 import { describe, it, expect } from "vitest";
 import { createProcessor } from "./helpers/test-utils.js";
 
-type ExtendedRootData = RootData & { rehypeSlugLinkProcessed?: boolean };
-type ExtendedTextData = TextData & { rehypeSlugLinkProcessed?: boolean };
-
 describe("rehypeSlugLink internal branches", () => {
-  it("should return early if tree is already processed", () => {
-    // Create a tree that's already marked as processed to test early return branch
-    const tree: Root = {
-      type: "root",
-      children: [
-        {
-          type: "element",
-          tagName: "h1",
-          properties: { id: "test" },
-          children: [{ type: "text", value: "Test" }],
-        },
-        {
-          type: "element",
-          tagName: "p",
-          properties: {},
-          children: [{ type: "text", value: "[{#test}]" }],
-        },
-      ],
-      data: { rehypeSlugLinkProcessed: true } as ExtendedRootData,
-    };
-
-    const processor = createProcessor();
-    const result = processor.runSync(tree);
-
-    // Verify the tree is returned unchanged without processing the link
-    const pElement = result.children[1] as Element;
-    const textNode = pElement.children[0] as Text;
-
-    expect(textNode.value).toBe("[{#test}]");
-    expect((result.data as ExtendedRootData)?.rehypeSlugLinkProcessed).toBe(
-      true,
-    );
-  });
-
-  it("should handle case where findAllMatches returns empty array", async () => {
-    // Create a scenario where pattern.test() returns true but findAllMatches
-    // returns empty array. This can happen when:
-    // 1. pattern.test() is called and returns true (due to global flag state)
-    // 2. But when findAllMatches calls pattern.exec(), it returns null
-    //    because the pattern was already consumed by the previous test()
-    //
-    // We can trigger this by using a pattern with global flag and manipulating
-    // the lastIndex state between test() and exec() calls.
-    // However, the code resets lastIndex before exec(), so we need a different approach.
-    //
-    // Actually, the code resets pattern.lastIndex = 0 before calling findAllMatches,
-    // so this edge case is hard to trigger naturally. But we can test it by
-    // directly calling the internal function or by using a pattern that matches
-    // but has issues with the exec loop.
-    //
-    // The simplest way is to ensure pattern.test returns true but the exec loop
-    // in findAllMatches doesn't find any matches. This is theoretically possible
-    // but hard to trigger. Instead, we'll modify the code to always call
-    // convertLinkSyntaxInText, or we can test with a pattern that has edge cases.
-
-    // For now, let's test with a pattern that matches but the exec loop
-    // exits early due to maxIterations or other conditions
-    const processor = createProcessor({
-      pattern: /(.)/g,
-      patternGroupMissing: "wrap",
-    });
-
-    // Create a very long string that would trigger maxIterations limit
-    // But actually, maxIterations is text.length + 1, so this won't help.
-    //
-    // Actually, the real issue is that pattern.test() can return true
-    // but pattern.exec() can return null if the pattern state is inconsistent.
-    // But the code resets lastIndex, so this shouldn't happen.
-    //
-    // The only way to trigger this is if pattern.test() returns true
-    // but pattern.exec() returns null even after resetting lastIndex.
-    // This can happen with certain regex patterns, but it's edge case.
-    //
-    // For 100% coverage, we need to ensure this branch is tested.
-    // Since it's hard to trigger naturally, we can modify the code slightly
-    // or accept that this is a defensive check that's hard to test.
-
-    const tree: Root = {
-      type: "root",
-      children: [
-        {
-          type: "element",
-          tagName: "h1",
-          properties: { id: "test" },
-          children: [{ type: "text", value: "Test" }],
-        },
-        {
-          type: "element",
-          tagName: "p",
-          properties: {},
-          children: [{ type: "text", value: "y" }], // No match, so findAllMatches returns empty
-        },
-      ],
-    };
-
-    const result = processor.runSync(tree);
-    // Should return unchanged since no matches were found
-    const pElement = result.children[1] as Element;
-    const textNode = pElement.children[0] as Text;
-    expect(textNode.value).toBe("y");
-  });
-
   it("should handle extractText with node that has no text and no children", () => {
     // Create a heading with only a comment node (no text, no children property)
     const processor = createProcessor();
@@ -283,10 +178,7 @@ describe("rehypeSlugLink internal branches", () => {
     expect(result.children[0].type).toBe("element");
   });
 
-  it("should use match[0] when match[1] is undefined (wrapped pattern)", () => {
-    // Test findAllMatches when pattern is wrapped (no capture group)
-    // When patternGroupMissing is "wrap", the pattern is wrapped with a capture group
-    // So match[1] will exist. However, we test that the wrapped pattern works correctly.
+  it("should link with a wrapped pattern (no capture group)", () => {
     const processor = createProcessor({
       pattern: /test/g,
       patternGroupMissing: "wrap", // This wraps the pattern to /(test)/g
@@ -348,9 +240,9 @@ describe("rehypeSlugLink internal branches", () => {
   });
 
   it("should handle normalizeUnicode case-insensitive matching in createLinkNode", () => {
-    // Test createLinkNode's normalizeUnicode case-insensitive matching logic
-    // When normalizeUnicode is enabled, heading text is normalized during collection
-    // and the link text should also be normalized
+    // With normalizeUnicode the reference is matched case-insensitively
+    // against normalized ids and heading text, while the link text keeps
+    // the heading's original text.
     const processor = createProcessor({
       normalizeUnicode: true,
     });
@@ -379,39 +271,7 @@ describe("rehypeSlugLink internal branches", () => {
     // Should match case-insensitively when normalizeUnicode is enabled
     expect(linkElement.tagName).toBe("a");
     expect(linkElement.properties?.href).toBe("#cafe");
-    // When normalizeUnicode is enabled, heading text is normalized during collection
-    // so the link text will be "Cafe" (normalized)
-    expect((linkElement.children[0] as Text).value).toBe("Cafe");
-  });
-
-  it("should handle parent being null or index not being a number in processTextNodes", () => {
-    // This tests the edge case where parent might be null or index might not be a number
-    // However, visit() from unist-util-visit should always provide valid values
-    // This is more of a defensive test for the branch in the code
-    const processor = createProcessor();
-    const tree: Root = {
-      type: "root",
-      children: [
-        {
-          type: "element",
-          tagName: "h1",
-          properties: { id: "test" },
-          children: [{ type: "text", value: "Test" }],
-        },
-        {
-          type: "element",
-          tagName: "p",
-          properties: {},
-          children: [{ type: "text", value: "[{#test}]" }],
-        },
-      ],
-    };
-
-    const result = processor.runSync(tree);
-    // Should process normally even with edge cases
-    const pElement = result.children[1] as Element;
-    const linkElement = pElement.children[0] as Element;
-    expect(linkElement.tagName).toBe("a");
+    expect((linkElement.children[0] as Text).value).toBe("Café");
   });
 
   it("should prevent reprocessing of already processed trees", async () => {
@@ -426,59 +286,5 @@ describe("rehypeSlugLink internal branches", () => {
     expect(secondResult.value.toString()).toBe(
       '<h1 id="test">Test</h1><p><a href="#test">Test</a></p>',
     );
-  });
-
-  it("should mark text nodes as processed when pattern matches but result is unchanged", async () => {
-    // Test that text nodes are marked as processed even when pattern matches
-    // but no conversion occurs (e.g., no matching heading found)
-    const processor = createProcessor({ pattern: /(123)/g });
-    const tree: Root = {
-      type: "root",
-      children: [
-        {
-          type: "element",
-          tagName: "p",
-          properties: {},
-          children: [{ type: "text", value: "123" }],
-        },
-      ],
-    };
-
-    const result = await processor.run(tree);
-    const pElement = result.children[0] as Element;
-    const textNode = pElement.children.find(
-      (n) => n.type === "text" && (n as Text).value === "123",
-    ) as Text;
-
-    expect((textNode?.data as ExtendedTextData)?.rehypeSlugLinkProcessed).toBe(
-      true,
-    );
-  });
-
-  it("should skip already processed text nodes", () => {
-    // Test that text nodes with rehypeSlugLinkProcessed flag are skipped
-    const processor = createProcessor();
-    const tree: Root = {
-      type: "root",
-      children: [
-        {
-          type: "element",
-          tagName: "p",
-          properties: {},
-          children: [
-            {
-              type: "text",
-              value: "[{#test}]",
-              data: { rehypeSlugLinkProcessed: true } as ExtendedTextData,
-            },
-          ],
-        },
-      ],
-    };
-
-    const result = processor.runSync(tree);
-    const pElement = result.children[0] as Element;
-    const textNode = pElement.children[0] as Text;
-    expect(textNode.value).toBe("[{#test}]");
   });
 });

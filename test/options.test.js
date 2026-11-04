@@ -88,8 +88,8 @@ describe("rehype-slug-link: Unicode normalization", () => {
       },
     );
 
-    // The link text should be normalized to ASCII
-    expect(result).toContain('<a href="#café">cafe</a>');
+    // The reference resolves to the heading; the link text keeps the original heading text
+    expect(result).toContain('<a href="#café">café</a>');
   });
 
   it("converts Latin accented characters", async () => {
@@ -107,12 +107,12 @@ describe("rehype-slug-link: Unicode normalization", () => {
       },
     );
 
-    // Verify that accented characters in link syntax are normalized to match heading text
-    // Café → Cafe, Naïve → Naive, Résumé → Resume, Piñata → Pinata
-    expect(result).toContain('<a href="#cafe">Cafe</a>');
-    expect(result).toContain('<a href="#naive">Naive</a>');
-    expect(result).toContain('<a href="#resume">Resume</a>');
-    expect(result).toContain('<a href="#pinata">Pinata</a>');
+    // Accented characters in link syntax are normalized to match the ids
+    // (Café → cafe, Naïve → naive, ...); the link text keeps the heading text
+    expect(result).toContain('<a href="#cafe">Café</a>');
+    expect(result).toContain('<a href="#naive">Naïve</a>');
+    expect(result).toContain('<a href="#resume">Résumé</a>');
+    expect(result).toContain('<a href="#pinata">Piñata</a>');
   });
 
   it("handles Nordic characters", async () => {
@@ -128,10 +128,10 @@ describe("rehype-slug-link: Unicode normalization", () => {
       },
     );
 
-    // Should normalize: ø→o, å→a
-    expect(result).toContain('<a href="#copenhagen">Kobenhavn</a>');
-    expect(result).toContain('<a href="#oslo">Oslo</a>');
-    expect(result).toContain('<a href="#aarhus">Arhus</a>');
+    // Should normalize for matching: ø→o, å→a
+    expect(result).toContain('<a href="#copenhagen">København</a>');
+    expect(result).toContain('<a href="#oslo">Oslø</a>');
+    expect(result).toContain('<a href="#aarhus">Århus</a>');
   });
 
   it("preserves non-Latin scripts", async () => {
@@ -147,9 +147,9 @@ describe("rehype-slug-link: Unicode normalization", () => {
       },
     );
 
-    // Should preserve CJK and Cyrillic characters (with potential normalization)
+    // Should preserve CJK and Cyrillic characters (including й)
     expect(result).toContain('<a href="#nihongo">日本語</a>');
     expect(result).toContain('<a href="#chinese">中文</a>');
-    expect(result).toContain('<a href="#cyrillic">Русскии</a>'); // Note: Cyrillic may be normalized
+    expect(result).toContain('<a href="#cyrillic">Русский</a>');
   });
 });

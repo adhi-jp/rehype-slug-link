@@ -14,7 +14,7 @@ A [rehype](https://github.com/rehypejs/rehype) plugin that converts custom link 
 
 - **Customizable link syntax**: Default is `[{#slug}]`, but any RegExp can be used.
 - **Flexible matching**: Supports multiple links per paragraph, deeply nested structures, and custom fallback behaviors.
-- **Unicode normalization**: Optionally normalize heading text and slugs.
+- **Unicode normalization**: Optionally match references regardless of accents and case.
 - **TypeScript support**: Includes type definitions.
 
 ---
@@ -47,6 +47,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeSlugLink from "rehype-slug-link";
 
 const file = await rehype()
+  .data("settings", { fragment: true })
   .use(rehypeSlug) // Ensure headings have IDs
   .use(rehypeSlugLink)
   .process("<h1>Introduction</h1><p>See [{#introduction}]</p>");
@@ -63,6 +64,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeSlugLink from "rehype-slug-link";
 
 const file = await rehype()
+  .data("settings", { fragment: true })
   .use(rehypeSlug)
   .use(rehypeSlugLink, { pattern: /\[link:([^\]]+)\]/g })
   .process("<h1>Intro</h1><p>See [link:intro]</p>");
@@ -96,6 +98,7 @@ import rehypeHeadingSlug from "rehype-heading-slug";
 import rehypeSlugLink from "rehype-slug-link";
 
 const file = await rehype()
+  .data("settings", { fragment: true })
   .use(rehypeHeadingSlug) // Supports {#custom-id} syntax
   .use(rehypeSlugLink)
   .process("<h1>Advanced Topics {#advanced}</h1><p>See [{#advanced}]</p>");
@@ -116,6 +119,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeSlugLink from "rehype-slug-link";
 
 const file = await rehype()
+  .data("settings", { fragment: true })
   .use(rehypeSlug)
   .use(rehypeSlugLink, {
     fallbackToHeadingText: true,
@@ -135,12 +139,13 @@ import rehypeHeadingSlug from "rehype-heading-slug";
 import rehypeSlugLink from "rehype-slug-link";
 
 const file = await rehype()
+  .data("settings", { fragment: true })
   .use(rehypeHeadingSlug, { normalizeUnicode: true })
   .use(rehypeSlugLink, { normalizeUnicode: true })
   .process("<h1>café</h1><p>See [{#cafe}]</p>");
 
 console.log(String(file));
-// <h1 id="cafe">café</h1><p>See <a href="#cafe">cafe</a></p>
+// <h1 id="cafe">café</h1><p>See <a href="#cafe">café</a></p>
 ```
 
 ---
@@ -155,16 +160,28 @@ Replaces custom link syntax in text nodes with anchor links to headings, based o
 
 All options are optional:
 
-| Name                          | Type    | Default                                     | Description                                                                                                                                                                                                                                                        |
-| ----------------------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pattern`                     | RegExp  | `/\[\{#([a-zA-Z0-9-_\u00C0-\uFFFF]+)\}\]/g` | Regular expression to match link syntax. The first capture group is used as the slug. Use the `g` flag to match every occurrence. Default allows ASCII and Unicode letters in the slug.                                                                            |
-| `missingCaptureGroupHandling` | string  | `"wrap"`                                    | If `pattern` has no capture group: `"wrap"` (wrap whole pattern), or `"error"` (throw error).                                                                                                                                                                      |
-| `fallbackToHeadingText`       | boolean | `false`                                     | If `true`, use heading text as slug if ID not found.                                                                                                                                                                                                               |
-| `invalidSlugHandling`         | string  | `"convert"`                                 | How to handle slugs containing characters other than ASCII letters, digits, `-`, and `_`: `"convert"` (auto-fix with github-slugger) or `"error"` (throw error).                                                                                                   |
-| `maintainCase`                | boolean | `false`                                     | Preserve case when generating slugs.                                                                                                                                                                                                                               |
-| `normalizeUnicode`            | boolean | `false`                                     | Normalize Unicode characters in slugs and heading text. Only converts Latin-based accented characters to ASCII equivalents, preserving other character systems (Cyrillic, CJK, etc.). Enables case-insensitive matching between normalized slugs and heading text. |
+| Name                          | Type    | Default               | Description                                                                                                                                                                                                                                                                                                      |
+| ----------------------------- | ------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pattern`                     | RegExp  | `/\[\{#([^}]+)\}\]/g` | Regular expression to match link syntax. The first capture group is the reference. Every occurrence is converted (`g` is added when missing, `y` is ignored).                                                                                                                                                    |
+| `missingCaptureGroupHandling` | string  | `"wrap"`              | If `pattern` has no capture group: `"wrap"` (wrap whole pattern), or `"error"` (throw error).                                                                                                                                                                                                                    |
+| `fallbackToHeadingText`       | boolean | `false`               | Also resolve references by heading text (whitespace-collapsed, exact match). The first heading with that text wins.                                                                                                                                                                                              |
+| `invalidSlugHandling`         | string  | `"convert"`           | How to handle a reference containing characters other than letters, digits, `-`, and `_` that does not resolve as written: `"convert"` (convert with github-slugger, then look it up) or `"error"` (throw error).                                                                                                |
+| `maintainCase`                | boolean | `false`               | Preserve case when converting a reference with github-slugger.                                                                                                                                                                                                                                                   |
+| `normalizeUnicode`            | boolean | `false`               | Also match references after normalizing Latin-based accented characters to ASCII (`é` to `e`, `ø` to `o`, `ß` to `ss`, ...) and ignoring case, against both heading ids and heading text. Other scripts (Cyrillic, CJK, etc.) are preserved. Matching only: the link text is always the heading's original text. |
 
 Options shared with [rehype-heading-slug](https://github.com/adhi-jp/rehype-heading-slug) (`pattern`, `missingCaptureGroupHandling`, `invalidSlugHandling`, `maintainCase`, and `normalizeUnicode`) use the same names and accepted values in both plugins.
+
+#### How references are resolved
+
+1. As written: an exact heading id, the heading text (with `fallbackToHeadingText`), or their normalized forms (with `normalizeUnicode`).
+2. If that fails and the reference is not a valid slug, `invalidSlugHandling` applies (`"error"` throws here).
+3. The github-slugger form of the reference (the id [rehype-slug](https://github.com/rehypejs/rehype-slug) or [rehype-heading-slug](https://github.com/adhi-jp/rehype-heading-slug) would generate for it, e.g. `[{#My Heading}]` → `my-heading`), looked up the same way.
+
+References that do not resolve are left unchanged. The link text is the heading's text after processing (whitespace collapsed), or its id when the heading has no text. Text inside `<a>`, `<code>`, `<kbd>`, `<math>`, `<pre>`, `<samp>`, `<script>`, `<style>`, `<svg>`, `<template>`, `<textarea>`, and `<title>` is never converted, so the syntax can be documented literally and running the plugin twice is safe.
+
+#### Errors
+
+Invalid options throw a `TypeError`. An invalid reference in `"error"` mode throws an `Error`. All messages start with `rehype-slug-link:`.
 
 #### Deprecated options
 
