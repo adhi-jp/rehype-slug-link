@@ -2,22 +2,36 @@ import type { Transformer } from "unified";
 import type { Root } from "hast";
 
 /**
+ * How to handle a `pattern` that has no capture group.
+ * - 'wrap': Wrap the whole pattern in a capture group
+ * - 'error': Throw an error
+ */
+export type MissingCaptureGroupHandling = "wrap" | "error";
+
+/**
+ * How to handle slugs that contain characters other than ASCII letters,
+ * digits, hyphens, and underscores.
+ * - 'convert': Convert invalid slugs using github-slugger
+ * - 'error': Throw an error
+ */
+export type InvalidSlugHandling = "convert" | "error";
+
+/**
  * Configuration options for the rehype-slug-link plugin.
  */
 export interface RehypeSlugLinkOptions {
   /**
-   * Link syntax regular expression pattern.
+   * Regular expression matching the link syntax. The first capture group is
+   * used as the slug. Use the global (`g`) flag to match every occurrence.
    * @default /\[\{#([a-zA-Z0-9-_\u00C0-\uFFFF]+)\}\]/g
    */
   pattern?: RegExp;
 
   /**
-   * Behavior when pattern has no capture groups.
-   * - 'wrap': Automatically wrap the pattern with capture group
-   * - 'error': Throw an error
+   * How to handle a `pattern` that has no capture group.
    * @default 'wrap'
    */
-  patternGroupMissing?: "wrap" | "error";
+  missingCaptureGroupHandling?: MissingCaptureGroupHandling;
 
   /**
    * Use heading text as slug if id not found.
@@ -27,11 +41,9 @@ export interface RehypeSlugLinkOptions {
 
   /**
    * How to handle invalid slugs.
-   * - 'convert': Convert invalid slugs using github-slugger
-   * - 'error': Throw an error
    * @default 'convert'
    */
-  invalidSlug?: "convert" | "error";
+  invalidSlugHandling?: InvalidSlugHandling;
 
   /**
    * Preserve case when generating slugs.
@@ -47,6 +59,20 @@ export interface RehypeSlugLinkOptions {
    * @default false
    */
   normalizeUnicode?: boolean;
+
+  /**
+   * Behavior when pattern has no capture groups.
+   * @deprecated Use `missingCaptureGroupHandling` instead. Ignored when
+   * `missingCaptureGroupHandling` is also set.
+   */
+  patternGroupMissing?: MissingCaptureGroupHandling;
+
+  /**
+   * How to handle invalid slugs.
+   * @deprecated Use `invalidSlugHandling` instead. Ignored when
+   * `invalidSlugHandling` is also set.
+   */
+  invalidSlug?: InvalidSlugHandling;
 }
 
 /**
